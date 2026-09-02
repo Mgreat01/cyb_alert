@@ -1,4 +1,4 @@
-package business.user.model;
+package com.cybAlert.cybAlert.business.user;
 
 import org.hibernate.validator.constraints.UUID;
 
