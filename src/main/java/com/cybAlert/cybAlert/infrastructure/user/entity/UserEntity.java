@@ -1,4 +1,4 @@
-package infrastructure.user.entity;
+package com.cybAlert.cybAlert.infrastructure.user.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
