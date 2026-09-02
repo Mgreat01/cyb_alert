@@ -1,4 +1,4 @@
-package application.user.entity;
+package infrastructure.user.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -11,7 +11,6 @@ import java.util.UUID;
 @Table(name = "users")
 public class UserEntity {
 
-    // Getters & Setters
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
