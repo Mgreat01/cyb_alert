@@ -1,6 +1,4 @@
-package business.user.repository;
-
-import business.user.model.User;
+package com.cybAlert.cybAlert.business.user;
 
 import java.util.Optional;
 
