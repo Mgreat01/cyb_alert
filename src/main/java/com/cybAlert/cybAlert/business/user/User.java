@@ -1,6 +1,6 @@
 package com.cybAlert.cybAlert.business.user;
 
-import org.hibernate.validator.constraints.UUID;
+import java.util.UUID;
 
 public class User {
     private final UUID id;
