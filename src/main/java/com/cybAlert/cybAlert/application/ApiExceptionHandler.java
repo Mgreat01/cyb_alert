@@ -3,6 +3,10 @@ package com.cybAlert.cybAlert.application;
 import com.cybAlert.cybAlert.business.auth.AuthService.AccountUnavailableException;
 import com.cybAlert.cybAlert.business.auth.AuthService.InvalidCredentialsException;
 import com.cybAlert.cybAlert.business.auth.AuthService.InvalidRefreshTokenException;
+import com.cybAlert.cybAlert.business.event.SecurityEventService.DuplicateEventException;
+import com.cybAlert.cybAlert.business.event.SecurityEventService.UnknownEventSourceException;
+import com.cybAlert.cybAlert.business.source.SourceService.SourceAlreadyExistsException;
+import com.cybAlert.cybAlert.business.source.SourceService.SourceNotFoundException;
 import com.cybAlert.cybAlert.business.user.DefaultUserService.UserAlreadyExistsException;
 import com.cybAlert.cybAlert.business.user.DefaultUserService.UserNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -37,6 +41,16 @@ public class ApiExceptionHandler {
     @ExceptionHandler(UserAlreadyExistsException.class)
     ProblemDetail handleConflict(UserAlreadyExistsException exception) {
         return problem(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler({SourceAlreadyExistsException.class, DuplicateEventException.class})
+    ProblemDetail handleDomainConflict(IllegalArgumentException exception) {
+        return problem(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler({SourceNotFoundException.class, UnknownEventSourceException.class})
+    ProblemDetail handleDomainNotFound(IllegalArgumentException exception) {
+        return problem(HttpStatus.NOT_FOUND, exception.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
