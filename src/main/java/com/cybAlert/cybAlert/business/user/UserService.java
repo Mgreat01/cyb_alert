@@ -7,7 +7,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface UserService {
-    UserEntity createUser(String username, String email, String rawPassword);
+    UserEntity createUser(String username, String email, String rawPassword,
+                          String firstName, String lastName);
     Optional<UserEntity> findByEmail(String email);
     Optional<UserEntity> findByUsername(String username);
     Optional<UserEntity> findById(UUID id);

@@ -24,7 +24,8 @@ public class DefaultUserService implements UserService {
 
     @Override
     @Transactional
-    public UserEntity createUser(String username, String email, String rawPassword) {
+    public UserEntity createUser(String username, String email, String rawPassword,
+                                 String firstName, String lastName) {
         String normalizedUsername = username.strip();
         String normalizedEmail = email.strip().toLowerCase(Locale.ROOT);
 
@@ -36,7 +37,8 @@ public class DefaultUserService implements UserService {
         }
 
         String passwordHash = passwordEncoder.encode(rawPassword);
-        return repository.save(new UserEntity(normalizedUsername, normalizedEmail, passwordHash));
+        return repository.save(new UserEntity(normalizedUsername, normalizedEmail, passwordHash,
+                firstName, lastName, UserEntity.Role.VIEWER, UserEntity.Status.ACTIVE));
     }
 
     @Override
