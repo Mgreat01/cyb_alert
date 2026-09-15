@@ -53,6 +53,12 @@ public class UserEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts;
+
+    @Column(name = "locked_at")
+    private Instant lockedAt;
+
     protected UserEntity() {
     }
 
@@ -76,6 +82,19 @@ public class UserEntity {
         this.lastName = lastName;
         this.role = role;
         this.status = status;
+    }
+
+    public void registerFailedLogin(int maximumAttempts) {
+        failedLoginAttempts++;
+        if (failedLoginAttempts >= maximumAttempts) {
+            status = Status.LOCKED;
+            lockedAt = Instant.now();
+        }
+    }
+
+    public void resetFailedLogins() {
+        failedLoginAttempts = 0;
+        lockedAt = null;
     }
 
     @PrePersist
