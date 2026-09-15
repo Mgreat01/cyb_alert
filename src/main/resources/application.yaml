@@ -1,15 +1,12 @@
 spring:
   application:
     name: cybAlert
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/cyberwatch}
-    username: ${DB_USERNAME:cyberwatch}
-    password: ${DB_PASSWORD:cyberwatch_dev}
-    driver-class-name: org.postgresql.Driver
+  profiles:
+    default: local
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         jdbc:
