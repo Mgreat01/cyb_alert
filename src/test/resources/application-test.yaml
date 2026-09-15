@@ -12,3 +12,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+
+cyberwatch:
+  security:
+    jwt-secret: test-only-cyberwatch-secret-with-at-least-32-bytes
