@@ -1,5 +1,8 @@
 package com.cybAlert.cybAlert.application;
 
+import com.cybAlert.cybAlert.business.auth.AuthService.AccountUnavailableException;
+import com.cybAlert.cybAlert.business.auth.AuthService.InvalidCredentialsException;
+import com.cybAlert.cybAlert.business.auth.AuthService.InvalidRefreshTokenException;
 import com.cybAlert.cybAlert.business.user.DefaultUserService.UserAlreadyExistsException;
 import com.cybAlert.cybAlert.business.user.DefaultUserService.UserNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -10,6 +13,21 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    ProblemDetail handleInvalidCredentials() {
+        return problem(HttpStatus.UNAUTHORIZED, "Identifiants invalides");
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    ProblemDetail handleInvalidRefreshToken() {
+        return problem(HttpStatus.UNAUTHORIZED, "Refresh token invalide ou expiré");
+    }
+
+    @ExceptionHandler(AccountUnavailableException.class)
+    ProblemDetail handleUnavailableAccount() {
+        return problem(HttpStatus.LOCKED, "Ce compte est désactivé ou verrouillé");
+    }
 
     @ExceptionHandler(UserNotFoundException.class)
     ProblemDetail handleNotFound(UserNotFoundException exception) {
