@@ -27,7 +27,22 @@ public class JpaUserRepository implements UserRepository {
     }
 
     @Override
+    public Optional<UserEntity> findByUsername(String username) {
+        return repository.findByUsernameIgnoreCase(username);
+    }
+
+    @Override
     public Optional<UserEntity> findById(UUID id) {
         return repository.findById(id);
+    }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return repository.existsByEmailIgnoreCase(email);
+    }
+
+    @Override
+    public boolean existsByUsername(String username) {
+        return repository.existsByUsernameIgnoreCase(username);
     }
 }
