@@ -32,7 +32,8 @@ public class UserController {
     @ResponseStatus(HttpStatus.CREATED)
     UserResponse create(@Valid @RequestBody UserRequest request) {
         return UserResponse.from(service.createUser(
-                request.username(), request.email(), request.password()));
+                request.username(), request.email(), request.password(),
+                request.firstName(), request.lastName()));
     }
 
     @GetMapping

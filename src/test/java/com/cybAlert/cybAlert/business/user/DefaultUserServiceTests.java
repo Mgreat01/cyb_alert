@@ -31,11 +31,12 @@ class DefaultUserServiceTests {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         UserEntity user = service.createUser(
-                " analyst ", " Analyst@CyberWatch.Test ", "plain-password");
+                " analyst ", " Analyst@CyberWatch.Test ", "plain-password", "Ada", "Lovelace");
 
         assertThat(user.getUsername()).isEqualTo("analyst");
         assertThat(user.getEmail()).isEqualTo("analyst@cyberwatch.test");
         assertThat(user.getPasswordHash()).isNotEqualTo("plain-password");
+        assertThat(user.getFirstName()).isEqualTo("Ada");
         assertThat(new BCryptPasswordEncoder().matches("plain-password", user.getPasswordHash()))
                 .isTrue();
     }
@@ -45,7 +46,7 @@ class DefaultUserServiceTests {
         when(repository.existsByEmail("analyst@cyberwatch.test")).thenReturn(true);
 
         assertThatThrownBy(() -> service.createUser(
-                "analyst", "ANALYST@cyberwatch.test", "plain-password"))
+                "analyst", "ANALYST@cyberwatch.test", "plain-password", null, null))
                 .isInstanceOf(DefaultUserService.UserAlreadyExistsException.class)
                 .hasMessageContaining("e-mail");
         verify(repository, never()).save(any());
