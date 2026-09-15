@@ -71,6 +71,13 @@ public class UserEntity {
         this.status = status;
     }
 
+    public void updateProfile(String firstName, String lastName, Role role, Status status) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.role = role;
+        this.status = status;
+    }
+
     @PrePersist
     void initializeTimestamps() {
         Instant now = Instant.now();
