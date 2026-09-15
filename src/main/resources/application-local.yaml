@@ -7,3 +7,7 @@ spring:
   docker:
     compose:
       enabled: ${DOCKER_COMPOSE_ENABLED:true}
+
+cyberwatch:
+  security:
+    jwt-secret: ${CYBERWATCH_JWT_SECRET:change-this-local-development-secret-with-32-bytes}

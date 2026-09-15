@@ -14,6 +14,6 @@ spring:
 
 cyberwatch:
   security:
-    jwt-secret: ${CYBERWATCH_JWT_SECRET:change-this-local-development-secret-with-32-bytes}
+    jwt-secret: ${CYBERWATCH_JWT_SECRET}
     access-token-duration: PT15M
     refresh-token-duration: P7D
