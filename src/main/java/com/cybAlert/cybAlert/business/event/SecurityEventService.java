@@ -13,10 +13,13 @@ public class SecurityEventService {
 
     private final SecurityEventRepository events;
     private final SourceRepository sources;
+    private final EventPublisher publisher;
 
-    public SecurityEventService(SecurityEventRepository events, SourceRepository sources) {
+    public SecurityEventService(SecurityEventRepository events, SourceRepository sources,
+                                EventPublisher publisher) {
         this.events = events;
         this.sources = sources;
+        this.publisher = publisher;
     }
 
     public SecurityEvent ingest(String eventId, String eventType, Instant timestamp,
@@ -35,7 +38,9 @@ public class SecurityEventService {
                 sourceId, strip(sourceIp), strip(destinationIp), sourcePort, destinationPort,
                 uppercase(protocol), strip(username), uppercase(severity), message.strip(),
                 metadata == null ? Map.of() : Map.copyOf(metadata));
-        return events.save(event);
+        SecurityEvent saved = events.save(event);
+        publisher.publish(saved);
+        return saved;
     }
 
     private String uppercase(String value) {

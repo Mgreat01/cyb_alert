@@ -26,7 +26,7 @@ class SecurityEventServiceTests {
     void setUp() {
         events = mock(SecurityEventRepository.class);
         sources = mock(SourceRepository.class);
-        service = new SecurityEventService(events, sources);
+        service = new SecurityEventService(events, sources, mock(EventPublisher.class));
         when(events.save(any(SecurityEvent.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
     }
