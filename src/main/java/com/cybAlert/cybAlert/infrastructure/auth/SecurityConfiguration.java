@@ -58,6 +58,9 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.PUT, "/api/sources/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/sources/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/events").hasAnyRole("ADMIN", "OPERATOR")
+                        .requestMatchers("/api/detection-rules/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/alerts/**")
+                            .hasAnyRole("ADMIN", "SOC_ANALYST")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
