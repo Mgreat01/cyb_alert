@@ -11,8 +11,11 @@ import com.cybAlert.cybAlert.infrastructure.source.SpringDataSourceRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
+import java.time.Instant;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -46,8 +49,34 @@ public class DashboardController {
                 risks.highestRisk(5));
     }
 
+    @GetMapping("/priority-alerts")
+    public List<PriorityAlert> priorityAlerts() {
+        return alerts.findByStatusNotOrderByRiskScoreDescDetectedAtDesc(
+                AlertEntity.Status.RESOLVED, PageRequest.of(0, 10)).stream()
+                .map(alert -> new PriorityAlert(alert.getId(), alert.getSourceId(),
+                        alert.getTitle(), alert.getSeverity(), alert.getRiskScore(),
+                        alert.getStatus(), alert.getDetectedAt()))
+                .toList();
+    }
+
+    @GetMapping("/priority-incidents")
+    public List<PriorityIncident> priorityIncidents() {
+        return incidents.findPriorityIncidents().stream()
+                .map(incident -> new PriorityIncident(incident.getId(), incident.getTitle(),
+                        incident.getPriority(), incident.getStatus(),
+                        incident.getAssignedTo(), incident.getCreatedAt()))
+                .toList();
+    }
+
     record Summary(long events, long openAlerts, long criticalAlerts,
                    long openIncidents, long offlineSources,
                    List<RiskService.SourceRisk> topRiskySources) {
     }
+
+    record PriorityAlert(UUID id, UUID sourceId, String title, AlertEntity.Severity severity,
+                         int riskScore, AlertEntity.Status status, Instant detectedAt) { }
+
+    record PriorityIncident(UUID id, String title, IncidentEntity.Priority priority,
+                            IncidentEntity.Status status, UUID assignedTo,
+                            Instant createdAt) { }
 }
