@@ -1,5 +1,6 @@
 package com.cybAlert.cybAlert.business.incident;
 
+import com.cybAlert.cybAlert.business.audit.AuditService;
 import com.cybAlert.cybAlert.business.alert.AlertEntity;
 import com.cybAlert.cybAlert.business.user.UserRepository;
 import com.cybAlert.cybAlert.infrastructure.alert.SpringDataAlertRepository;
@@ -25,17 +26,19 @@ public class IncidentService {
     private final SpringDataIncidentCommentRepository comments;
     private final SpringDataIncidentHistoryRepository history;
     private final UserRepository users;
+    private final AuditService audit;
 
     public IncidentService(SpringDataIncidentRepository incidents,
                            SpringDataAlertRepository alerts,
                            SpringDataIncidentCommentRepository comments,
                            SpringDataIncidentHistoryRepository history,
-                           UserRepository users) {
+                           UserRepository users, AuditService audit) {
         this.incidents = incidents;
         this.alerts = alerts;
         this.comments = comments;
         this.history = history;
         this.users = users;
+        this.audit = audit;
     }
 
     @Transactional
@@ -49,6 +52,7 @@ public class IncidentService {
         IncidentEntity incident = incidents.save(new IncidentEntity(actorId, title, description,
                 severity, priority, new HashSet<>(found)));
         history.save(new IncidentHistoryEntity(incident.getId(), actorId, "CREATED", title));
+        audit.record(actorId, "INCIDENT_CREATED", "INCIDENT", incident.getId().toString());
         return incident;
     }
 
@@ -66,6 +70,7 @@ public class IncidentService {
         IncidentEntity incident = findById(id);
         incident.changeStatus(status);
         history.save(new IncidentHistoryEntity(id, actorId, "STATUS_CHANGED", status.name()));
+        audit.record(actorId, "INCIDENT_STATUS_CHANGED", "INCIDENT", id.toString());
         return incidents.save(incident);
     }
 
@@ -77,6 +82,7 @@ public class IncidentService {
         IncidentEntity incident = findById(id);
         incident.assign(assigneeId);
         history.save(new IncidentHistoryEntity(id, actorId, "ASSIGNED", assigneeId.toString()));
+        audit.record(actorId, "INCIDENT_ASSIGNED", "INCIDENT", id.toString());
         return incidents.save(incident);
     }
 
@@ -86,6 +92,7 @@ public class IncidentService {
         IncidentCommentEntity comment = comments.save(
                 new IncidentCommentEntity(id, actorId, content));
         history.save(new IncidentHistoryEntity(id, actorId, "COMMENTED", "Commentaire ajouté"));
+        audit.record(actorId, "INCIDENT_COMMENTED", "INCIDENT", id.toString());
         return comment;
     }
 
