@@ -22,6 +22,19 @@ public class ElasticsearchSecurityEventRepository implements SecurityEventReposi
 
     public Page<SecurityEvent> search(String eventType, String sourceIp, String severity,
                                       Pageable pageable) {
+        if (eventType != null && sourceIp != null && severity != null) {
+            return repository.findByEventTypeAndSourceIpAndSeverity(eventType, sourceIp,
+                    severity, pageable);
+        }
+        if (eventType != null && sourceIp != null) {
+            return repository.findByEventTypeAndSourceIp(eventType, sourceIp, pageable);
+        }
+        if (eventType != null && severity != null) {
+            return repository.findByEventTypeAndSeverity(eventType, severity, pageable);
+        }
+        if (sourceIp != null && severity != null) {
+            return repository.findBySourceIpAndSeverity(sourceIp, severity, pageable);
+        }
         if (eventType != null) { return repository.findByEventType(eventType, pageable); }
         if (sourceIp != null) { return repository.findBySourceIp(sourceIp, pageable); }
         if (severity != null) { return repository.findBySeverity(severity, pageable); }
