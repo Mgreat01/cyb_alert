@@ -74,6 +74,21 @@ class DetectionServiceTests {
         verify(alerts, never()).saveAndFlush(any());
     }
 
+    @Test
+    void createsAnAlertWhenScanReachesDistinctDestinationThreshold() {
+        when(rules.findByEventTypeAndEnabledTrue("PORT_SCAN"))
+                .thenReturn(List.of(new DetectionRuleEntity("NETWORK_SCAN", "PORT_SCAN",
+                        10, 60, "HIGH", true)));
+        when(observations.countDistinctDestinations(any(), any(), any(), any()))
+                .thenReturn(10L);
+        when(alerts.saveAndFlush(any(AlertEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.process(event("PORT_SCAN", "evt-10", "10.0.0.1"));
+
+        verify(alerts).saveAndFlush(any(AlertEntity.class));
+    }
+
     private SecurityEvent event(String type, String id, String sourceIp) {
         return new SecurityEvent(id, type, Instant.now(), UUID.randomUUID(), sourceIp,
                 "10.0.0.2", null, null, "TCP", null, "HIGH", "Message", Map.of());
