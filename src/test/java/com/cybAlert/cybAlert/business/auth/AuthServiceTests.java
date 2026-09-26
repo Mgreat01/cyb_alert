@@ -1,6 +1,7 @@
 package com.cybAlert.cybAlert.business.auth;
 
 import com.cybAlert.cybAlert.business.user.UserEntity;
+import com.cybAlert.cybAlert.business.audit.AuditService;
 import com.cybAlert.cybAlert.business.user.UserRepository;
 import com.cybAlert.cybAlert.infrastructure.auth.JwtTokenService;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +26,8 @@ class AuthServiceTests {
     void setUp() {
         users = mock(UserRepository.class);
         service = new AuthService(users, mock(RefreshTokenRepository.class),
-                new BCryptPasswordEncoder(4), mock(JwtTokenService.class), Duration.ofDays(7));
+                new BCryptPasswordEncoder(4), mock(JwtTokenService.class), Duration.ofDays(7),
+                mock(AuditService.class));
     }
 
     @Test

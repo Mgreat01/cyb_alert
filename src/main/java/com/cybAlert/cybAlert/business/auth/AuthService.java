@@ -1,5 +1,6 @@
 package com.cybAlert.cybAlert.business.auth;
 
+import com.cybAlert.cybAlert.business.audit.AuditService;
 import com.cybAlert.cybAlert.business.user.UserEntity;
 import com.cybAlert.cybAlert.business.user.UserRepository;
 import com.cybAlert.cybAlert.infrastructure.auth.JwtTokenService;
@@ -29,30 +30,42 @@ public class AuthService {
     private final JwtTokenService jwtTokens;
     private final Duration refreshTokenDuration;
     private final SecureRandom secureRandom = new SecureRandom();
+    private final AuditService audit;
 
     public AuthService(UserRepository users, RefreshTokenRepository refreshTokens,
                        PasswordEncoder passwordEncoder, JwtTokenService jwtTokens,
-                       @Value("${cyberwatch.security.refresh-token-duration}") Duration duration) {
+                       @Value("${cyberwatch.security.refresh-token-duration}") Duration duration,
+                       AuditService audit) {
         this.users = users;
         this.refreshTokens = refreshTokens;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokens = jwtTokens;
         this.refreshTokenDuration = duration;
+        this.audit = audit;
     }
 
+    @Transactional(noRollbackFor = {InvalidCredentialsException.class,
+            AccountUnavailableException.class})
     public TokenPair login(String email, String password) {
         UserEntity user = users.findByEmail(email.strip().toLowerCase(Locale.ROOT))
-                .orElseThrow(InvalidCredentialsException::new);
+                .orElse(null);
+        if (user == null) {
+            audit.record(null, "LOGIN_FAILED", "USER", null);
+            throw new InvalidCredentialsException();
+        }
         if (user.getStatus() != UserEntity.Status.ACTIVE) {
+            audit.record(user.getId(), "LOGIN_DENIED", "USER", String.valueOf(user.getId()));
             throw new AccountUnavailableException();
         }
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             user.registerFailedLogin(MAXIMUM_LOGIN_ATTEMPTS);
             users.save(user);
+            audit.record(user.getId(), "LOGIN_FAILED", "USER", String.valueOf(user.getId()));
             throw new InvalidCredentialsException();
         }
         user.resetFailedLogins();
         users.save(user);
+        audit.record(user.getId(), "LOGIN_SUCCESS", "USER", String.valueOf(user.getId()));
         return issueTokens(user);
     }
 
@@ -65,6 +78,8 @@ public class AuthService {
         }
         token.revoke();
         refreshTokens.save(token);
+        audit.record(token.getUser().getId(), "TOKEN_REFRESHED", "USER",
+                token.getUser().getId().toString());
         return issueTokens(token.getUser());
     }
 
@@ -72,6 +87,8 @@ public class AuthService {
         refreshTokens.findByTokenHash(hash(rawRefreshToken)).ifPresent(token -> {
             token.revoke();
             refreshTokens.save(token);
+            audit.record(token.getUser().getId(), "LOGOUT", "USER",
+                    token.getUser().getId().toString());
         });
     }
 
