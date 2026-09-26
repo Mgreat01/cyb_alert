@@ -14,14 +14,12 @@ import java.util.UUID;
 @Service
 public class SecurityEventService {
 
-    private final SecurityEventRepository events;
     private final SourceRepository sources;
     private final EventOutboxRepository outbox;
     private final EventPayloadCodec codec;
 
-    public SecurityEventService(SecurityEventRepository events, SourceRepository sources,
+    public SecurityEventService(SourceRepository sources,
                                 EventOutboxRepository outbox, EventPayloadCodec codec) {
-        this.events = events;
         this.sources = sources;
         this.outbox = outbox;
         this.codec = codec;
@@ -34,7 +32,7 @@ public class SecurityEventService {
                                 String username, String severity, String message,
                                 Map<String, Object> metadata) {
         String normalizedId = eventId.strip();
-        if (outbox.existsById(normalizedId) || events.existsById(normalizedId)) {
+        if (outbox.existsById(normalizedId)) {
             throw new DuplicateEventException(normalizedId);
         }
         if (sources.findById(sourceId).isEmpty()) {

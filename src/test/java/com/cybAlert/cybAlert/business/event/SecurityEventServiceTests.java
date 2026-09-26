@@ -20,7 +20,6 @@ import static org.mockito.Mockito.when;
 
 class SecurityEventServiceTests {
 
-    private SecurityEventRepository events;
     private SourceRepository sources;
     private EventOutboxRepository outbox;
     private EventPayloadCodec codec;
@@ -28,11 +27,10 @@ class SecurityEventServiceTests {
 
     @BeforeEach
     void setUp() {
-        events = mock(SecurityEventRepository.class);
         sources = mock(SourceRepository.class);
         outbox = mock(EventOutboxRepository.class);
         codec = mock(EventPayloadCodec.class);
-        service = new SecurityEventService(events, sources, outbox, codec);
+        service = new SecurityEventService(sources, outbox, codec);
     }
 
     @Test
