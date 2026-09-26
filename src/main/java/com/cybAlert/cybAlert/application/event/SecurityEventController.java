@@ -2,6 +2,7 @@ package com.cybAlert.cybAlert.application.event;
 
 import com.cybAlert.cybAlert.business.event.SecurityEvent;
 import com.cybAlert.cybAlert.business.event.SecurityEventService;
+import com.cybAlert.cybAlert.infrastructure.event.ElasticsearchSecurityEventRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -10,6 +11,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,14 +25,38 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/events")
 public class SecurityEventController {
 
     private final SecurityEventService service;
+    private final ElasticsearchSecurityEventRepository events;
 
-    public SecurityEventController(SecurityEventService service) { this.service = service; }
+    public SecurityEventController(SecurityEventService service,
+                                   ElasticsearchSecurityEventRepository events) {
+        this.service = service;
+        this.events = events;
+    }
+
+    @GetMapping
+    Page<SecurityEvent> search(@RequestParam(required = false) String eventType,
+                               @RequestParam(required = false) String sourceIp,
+                               @RequestParam(required = false) String severity,
+                               Pageable pageable) {
+        return events.search(normalize(eventType), sourceIp, normalize(severity), pageable);
+    }
+
+    @GetMapping("/{id}")
+    SecurityEvent findById(@PathVariable String id) {
+        return events.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Événement introuvable : " + id));
+    }
+
+    private String normalize(String value) {
+        return value == null ? null : value.strip().toUpperCase(Locale.ROOT);
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
