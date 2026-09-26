@@ -32,3 +32,5 @@ springdoc:
 cyberwatch:
   security:
     jwt-secret: ${CYBERWATCH_JWT_SECRET}
+  webhook:
+    secret: ${CYBERWATCH_WEBHOOK_SECRET}

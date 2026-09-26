@@ -9,6 +9,9 @@ import com.cybAlert.cybAlert.business.source.SourceService.SourceAlreadyExistsEx
 import com.cybAlert.cybAlert.business.source.SourceService.SourceNotFoundException;
 import com.cybAlert.cybAlert.business.user.DefaultUserService.UserAlreadyExistsException;
 import com.cybAlert.cybAlert.business.user.DefaultUserService.UserNotFoundException;
+import com.cybAlert.cybAlert.business.webhook.WebhookVerifier.InvalidWebhookException;
+import com.cybAlert.cybAlert.business.webhook.WebhookVerifier.ReplayedWebhookException;
+import com.cybAlert.cybAlert.application.event.WebhookController.InvalidWebhookPayloadException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -61,6 +64,21 @@ public class ApiExceptionHandler {
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .toList());
         return problem;
+    }
+
+    @ExceptionHandler(InvalidWebhookException.class)
+    ProblemDetail handleInvalidWebhook() {
+        return problem(HttpStatus.UNAUTHORIZED, "Signature webhook invalide ou expirée");
+    }
+
+    @ExceptionHandler(ReplayedWebhookException.class)
+    ProblemDetail handleReplayedWebhook() {
+        return problem(HttpStatus.CONFLICT, "Webhook déjà reçu");
+    }
+
+    @ExceptionHandler(InvalidWebhookPayloadException.class)
+    ProblemDetail handleInvalidWebhookPayload() {
+        return problem(HttpStatus.UNPROCESSABLE_ENTITY, "Webhook invalide");
     }
 
     private ProblemDetail problem(HttpStatus status, String detail) {
