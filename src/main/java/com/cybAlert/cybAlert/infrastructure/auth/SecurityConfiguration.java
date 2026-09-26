@@ -50,6 +50,7 @@ public class SecurityConfiguration {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/webhooks/events").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/sources").hasAnyRole("ADMIN", "OPERATOR")
