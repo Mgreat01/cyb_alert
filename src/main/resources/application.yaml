@@ -12,6 +12,19 @@ spring:
         jdbc:
           time_zone: UTC
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 0.1
+
 cyberwatch:
   security:
     jwt-secret: ${CYBERWATCH_JWT_SECRET}
