@@ -5,6 +5,7 @@ import com.cybAlert.cybAlert.business.event.SecurityEvent;
 import com.cybAlert.cybAlert.infrastructure.alert.SpringDataAlertRepository;
 import com.cybAlert.cybAlert.infrastructure.detection.SpringDataDetectionObservationRepository;
 import com.cybAlert.cybAlert.infrastructure.detection.SpringDataDetectionRuleRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +32,8 @@ class DetectionServiceTests {
         observations = mock(SpringDataDetectionObservationRepository.class);
         rules = mock(SpringDataDetectionRuleRepository.class);
         alerts = mock(SpringDataAlertRepository.class);
-        service = new DetectionService(observations, rules, alerts);
+        service = new DetectionService(observations, rules, alerts,
+                mock(ApplicationEventPublisher.class));
     }
 
     @Test
@@ -41,10 +43,12 @@ class DetectionServiceTests {
                         5, 60, "HIGH", true)));
         when(observations.countByEventTypeAndSourceIpAndEventTimeBetween(
                 any(), any(), any(), any())).thenReturn(5L);
+        when(alerts.saveAndFlush(any(AlertEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         service.process(event("LOGIN_FAILED", "evt-5", "10.0.0.1"));
 
-        verify(alerts).save(any(AlertEntity.class));
+        verify(alerts).saveAndFlush(any(AlertEntity.class));
     }
 
     @Test
@@ -54,7 +58,7 @@ class DetectionServiceTests {
         service.process(event("LOGIN_FAILED", "evt-5", "10.0.0.1"));
 
         verify(observations, never()).saveAndFlush(any());
-        verify(alerts, never()).save(any());
+        verify(alerts, never()).saveAndFlush(any());
     }
 
     @Test
@@ -67,7 +71,7 @@ class DetectionServiceTests {
 
         service.process(event("PORT_SCAN", "evt-9", "10.0.0.1"));
 
-        verify(alerts, never()).save(any());
+        verify(alerts, never()).saveAndFlush(any());
     }
 
     private SecurityEvent event(String type, String id, String sourceIp) {

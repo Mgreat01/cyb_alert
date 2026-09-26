@@ -5,10 +5,12 @@ import com.cybAlert.cybAlert.business.event.SecurityEvent;
 import com.cybAlert.cybAlert.infrastructure.alert.SpringDataAlertRepository;
 import com.cybAlert.cybAlert.infrastructure.detection.SpringDataDetectionObservationRepository;
 import com.cybAlert.cybAlert.infrastructure.detection.SpringDataDetectionRuleRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Service
 public class DetectionService {
@@ -16,13 +18,15 @@ public class DetectionService {
     private final SpringDataDetectionObservationRepository observations;
     private final SpringDataDetectionRuleRepository rules;
     private final SpringDataAlertRepository alerts;
+    private final ApplicationEventPublisher events;
 
     public DetectionService(SpringDataDetectionObservationRepository observations,
                             SpringDataDetectionRuleRepository rules,
-                            SpringDataAlertRepository alerts) {
+                            SpringDataAlertRepository alerts, ApplicationEventPublisher events) {
         this.observations = observations;
         this.rules = rules;
         this.alerts = alerts;
+        this.events = events;
     }
 
     @Transactional
@@ -44,7 +48,8 @@ public class DetectionService {
                         rule.getName(), "Détection de " + rule.getName() + " depuis "
                         + event.getSourceIp(), AlertEntity.Severity.valueOf(rule.getSeverity()),
                         severityScore(rule.getSeverity()), Instant.now());
-                alerts.save(alert);
+                AlertEntity saved = alerts.saveAndFlush(alert);
+                events.publishEvent(new AlertCreated(saved.getId()));
             }
         }
     }
@@ -67,5 +72,8 @@ public class DetectionService {
             case "CRITICAL" -> 100;
             default -> throw new IllegalArgumentException("Sévérité inconnue : " + severity);
         };
+    }
+
+    public record AlertCreated(UUID alertId) {
     }
 }
