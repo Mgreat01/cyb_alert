@@ -59,7 +59,7 @@ public class SecurityEventController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.ACCEPTED)
     EventResponse ingest(@Valid @RequestBody EventRequest request) {
         SecurityEvent event = service.ingest(request.eventId(), request.eventType(),
                 request.timestamp(), request.sourceId(), request.sourceIp(),
