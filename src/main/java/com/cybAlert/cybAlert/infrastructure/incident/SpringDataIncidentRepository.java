@@ -10,4 +10,5 @@ import java.util.UUID;
 public interface SpringDataIncidentRepository extends JpaRepository<IncidentEntity, UUID> {
 
     Page<IncidentEntity> findByStatus(IncidentEntity.Status status, Pageable pageable);
+    long countByStatusNot(IncidentEntity.Status status);
 }

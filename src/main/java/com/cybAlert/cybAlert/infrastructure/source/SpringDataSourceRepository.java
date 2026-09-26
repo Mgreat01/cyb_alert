@@ -5,7 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
 
-interface SpringDataSourceRepository extends JpaRepository<SourceEntity, UUID> {
+public interface SpringDataSourceRepository extends JpaRepository<SourceEntity, UUID> {
 
     boolean existsByHostnameIgnoreCase(String hostname);
+    long countByStatus(SourceEntity.Status status);
 }
