@@ -2,6 +2,8 @@ package com.cybAlert.cybAlert.business.event;
 
 import com.cybAlert.cybAlert.business.source.SourceEntity;
 import com.cybAlert.cybAlert.business.source.SourceRepository;
+import com.cybAlert.cybAlert.infrastructure.event.EventOutboxRepository;
+import com.cybAlert.cybAlert.infrastructure.event.EventPayloadCodec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,15 +22,17 @@ class SecurityEventServiceTests {
 
     private SecurityEventRepository events;
     private SourceRepository sources;
+    private EventOutboxRepository outbox;
+    private EventPayloadCodec codec;
     private SecurityEventService service;
 
     @BeforeEach
     void setUp() {
         events = mock(SecurityEventRepository.class);
         sources = mock(SourceRepository.class);
-        service = new SecurityEventService(events, sources, mock(EventPublisher.class));
-        when(events.save(any(SecurityEvent.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        outbox = mock(EventOutboxRepository.class);
+        codec = mock(EventPayloadCodec.class);
+        service = new SecurityEventService(events, sources, outbox, codec);
     }
 
     @Test
@@ -44,11 +48,12 @@ class SecurityEventServiceTests {
         assertThat(event.getEventType()).isEqualTo("LOGIN_FAILED");
         assertThat(event.getProtocol()).isEqualTo("TCP");
         assertThat(event.getSeverity()).isEqualTo("HIGH");
+        org.mockito.Mockito.verify(outbox).saveAndFlush(any(EventOutboxEntity.class));
     }
 
     @Test
     void rejectsAnAlreadyIngestedEvent() {
-        when(events.existsById("evt-42")).thenReturn(true);
+        when(outbox.existsById("evt-42")).thenReturn(true);
 
         assertThatThrownBy(() -> service.ingest("evt-42", "LOGIN_FAILED", Instant.now(),
                 UUID.randomUUID(), null, null, null, null, null, null,

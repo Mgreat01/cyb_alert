@@ -1,7 +1,10 @@
 package com.cybAlert.cybAlert.business.event;
 
 import com.cybAlert.cybAlert.business.source.SourceRepository;
+import com.cybAlert.cybAlert.infrastructure.event.EventOutboxRepository;
+import com.cybAlert.cybAlert.infrastructure.event.EventPayloadCodec;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Locale;
@@ -13,22 +16,25 @@ public class SecurityEventService {
 
     private final SecurityEventRepository events;
     private final SourceRepository sources;
-    private final EventPublisher publisher;
+    private final EventOutboxRepository outbox;
+    private final EventPayloadCodec codec;
 
     public SecurityEventService(SecurityEventRepository events, SourceRepository sources,
-                                EventPublisher publisher) {
+                                EventOutboxRepository outbox, EventPayloadCodec codec) {
         this.events = events;
         this.sources = sources;
-        this.publisher = publisher;
+        this.outbox = outbox;
+        this.codec = codec;
     }
 
+    @Transactional
     public SecurityEvent ingest(String eventId, String eventType, Instant timestamp,
                                 UUID sourceId, String sourceIp, String destinationIp,
                                 Integer sourcePort, Integer destinationPort, String protocol,
                                 String username, String severity, String message,
                                 Map<String, Object> metadata) {
         String normalizedId = eventId.strip();
-        if (events.existsById(normalizedId)) {
+        if (outbox.existsById(normalizedId) || events.existsById(normalizedId)) {
             throw new DuplicateEventException(normalizedId);
         }
         if (sources.findById(sourceId).isEmpty()) {
@@ -38,9 +44,8 @@ public class SecurityEventService {
                 sourceId, strip(sourceIp), strip(destinationIp), sourcePort, destinationPort,
                 uppercase(protocol), strip(username), uppercase(severity), message.strip(),
                 metadata == null ? Map.of() : Map.copyOf(metadata));
-        SecurityEvent saved = events.save(event);
-        publisher.publish(saved);
-        return saved;
+        outbox.saveAndFlush(new EventOutboxEntity(normalizedId, codec.encode(event)));
+        return event;
     }
 
     private String uppercase(String value) {
