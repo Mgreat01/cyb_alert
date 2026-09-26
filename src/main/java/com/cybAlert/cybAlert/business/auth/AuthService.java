@@ -79,7 +79,7 @@ public class AuthService {
         token.revoke();
         refreshTokens.save(token);
         audit.record(token.getUser().getId(), "TOKEN_REFRESHED", "USER",
-                token.getUser().getId().toString());
+                String.valueOf(token.getUser().getId()));
         return issueTokens(token.getUser());
     }
 
@@ -88,7 +88,7 @@ public class AuthService {
             token.revoke();
             refreshTokens.save(token);
             audit.record(token.getUser().getId(), "LOGOUT", "USER",
-                    token.getUser().getId().toString());
+                    String.valueOf(token.getUser().getId()));
         });
     }
 
