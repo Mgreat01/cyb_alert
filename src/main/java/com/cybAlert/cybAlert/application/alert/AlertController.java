@@ -28,6 +28,9 @@ public class AlertController {
     public Page<AlertEntity> findAll(@RequestParam(required = false) AlertEntity.Status status,
                                      @RequestParam(required = false) AlertEntity.Severity severity,
                                      Pageable pageable) {
+        if (status != null && severity != null) {
+            return alerts.findByStatusAndSeverity(status, severity, pageable);
+        }
         if (status != null) { return alerts.findByStatus(status, pageable); }
         if (severity != null) { return alerts.findBySeverity(severity, pageable); }
         return alerts.findAll(pageable);

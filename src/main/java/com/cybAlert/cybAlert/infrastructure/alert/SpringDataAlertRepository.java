@@ -11,6 +11,10 @@ public interface SpringDataAlertRepository extends JpaRepository<AlertEntity, UU
 
     Page<AlertEntity> findByStatus(AlertEntity.Status status, Pageable pageable);
     Page<AlertEntity> findBySeverity(AlertEntity.Severity severity, Pageable pageable);
+    Page<AlertEntity> findByStatusAndSeverity(AlertEntity.Status status,
+                                               AlertEntity.Severity severity, Pageable pageable);
+    Page<AlertEntity> findByStatusNotOrderByRiskScoreDescDetectedAtDesc(
+            AlertEntity.Status status, Pageable pageable);
     long countByStatusNot(AlertEntity.Status status);
     long countBySeverityAndStatusNot(AlertEntity.Severity severity,
                                      AlertEntity.Status status);
