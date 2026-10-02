@@ -1,5 +1,6 @@
 package com.cybAlert.cybAlert.business.source;
 
+import com.cybAlert.cybAlert.business.audit.AuditService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -12,9 +13,11 @@ import java.util.UUID;
 public class SourceService {
 
     private final SourceRepository repository;
+    private final AuditService audit;
 
-    public SourceService(SourceRepository repository) {
+    public SourceService(SourceRepository repository, AuditService audit) {
         this.repository = repository;
+        this.audit = audit;
     }
 
     @Transactional
@@ -24,8 +27,10 @@ public class SourceService {
         if (repository.existsByHostname(hostname.strip())) {
             throw new SourceAlreadyExistsException();
         }
-        return repository.save(new SourceEntity(hostname.strip(), ipAddress.strip(), macAddress,
-                operatingSystem, type, environment.strip()));
+        SourceEntity created = repository.save(new SourceEntity(hostname.strip(),
+                ipAddress.strip(), macAddress, operatingSystem, type, environment.strip()));
+        audit.recordCurrentActor("SOURCE_CREATED", "SOURCE", String.valueOf(created.getId()));
+        return created;
     }
 
     public SourceEntity findById(UUID id) {
@@ -47,7 +52,9 @@ public class SourceService {
         }
         source.update(hostname.strip(), ipAddress.strip(), macAddress, operatingSystem,
                 type, environment.strip());
-        return repository.save(source);
+        SourceEntity updated = repository.save(source);
+        audit.recordCurrentActor("SOURCE_UPDATED", "SOURCE", id.toString());
+        return updated;
     }
 
     @Transactional
@@ -60,6 +67,7 @@ public class SourceService {
     @Transactional
     public void delete(UUID id) {
         repository.delete(findById(id));
+        audit.recordCurrentActor("SOURCE_DELETED", "SOURCE", id.toString());
     }
 
     public static class SourceNotFoundException extends IllegalArgumentException {

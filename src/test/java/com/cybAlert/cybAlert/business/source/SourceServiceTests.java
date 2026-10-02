@@ -1,5 +1,6 @@
 package com.cybAlert.cybAlert.business.source;
 
+import com.cybAlert.cybAlert.business.audit.AuditService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -10,17 +11,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SourceServiceTests {
 
     private SourceRepository repository;
+    private AuditService audit;
     private SourceService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(SourceRepository.class);
-        service = new SourceService(repository);
+        audit = mock(AuditService.class);
+        service = new SourceService(repository, audit);
         when(repository.save(any(SourceEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
     }
@@ -33,6 +37,7 @@ class SourceServiceTests {
         assertThat(source.getHostname()).isEqualTo("server-01");
         assertThat(source.getIpAddress()).isEqualTo("10.0.0.1");
         assertThat(source.getStatus()).isEqualTo(SourceEntity.Status.UNKNOWN);
+        verify(audit).recordCurrentActor("SOURCE_CREATED", "SOURCE", "null");
     }
 
     @Test
@@ -55,5 +60,20 @@ class SourceServiceTests {
         assertThatThrownBy(() -> service.create("server-01", "10.0.0.1", null,
                 "Linux", SourceEntity.Type.SERVER, "production"))
                 .isInstanceOf(SourceService.SourceAlreadyExistsException.class);
+    }
+
+    @Test
+    void auditsSourceUpdatesAndDeletion() {
+        UUID id = UUID.randomUUID();
+        SourceEntity source = new SourceEntity("server-01", "10.0.0.1", null,
+                "Linux", SourceEntity.Type.SERVER, "production");
+        when(repository.findById(id)).thenReturn(Optional.of(source));
+
+        service.update(id, "server-01", "10.0.0.2", null, "Linux",
+                SourceEntity.Type.SERVER, "production");
+        service.delete(id);
+
+        verify(audit).recordCurrentActor("SOURCE_UPDATED", "SOURCE", id.toString());
+        verify(audit).recordCurrentActor("SOURCE_DELETED", "SOURCE", id.toString());
     }
 }
