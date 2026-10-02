@@ -1,6 +1,7 @@
 package com.cybAlert.cybAlert.application.detection;
 
 import com.cybAlert.cybAlert.business.detection.DetectionRuleEntity;
+import com.cybAlert.cybAlert.business.detection.DetectionRuleService;
 import com.cybAlert.cybAlert.infrastructure.detection.SpringDataDetectionRuleRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -27,9 +28,12 @@ import java.util.UUID;
 public class DetectionRuleController {
 
     private final SpringDataDetectionRuleRepository rules;
+    private final DetectionRuleService service;
 
-    public DetectionRuleController(SpringDataDetectionRuleRepository rules) {
+    public DetectionRuleController(SpringDataDetectionRuleRepository rules,
+                                   DetectionRuleService service) {
         this.rules = rules;
+        this.service = service;
     }
 
     @GetMapping
@@ -38,19 +42,17 @@ public class DetectionRuleController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public DetectionRuleEntity create(@Valid @RequestBody RuleRequest request) {
-        return rules.save(new DetectionRuleEntity(request.name(), request.eventType(),
+        return service.create(request.name(), request.eventType(),
                 request.thresholdCount(), request.windowSeconds(), request.severity(),
-                request.enabled()));
+                request.enabled());
     }
 
     @PutMapping("/{id}")
     public DetectionRuleEntity update(@PathVariable UUID id,
                                       @Valid @RequestBody RuleRequest request) {
-        DetectionRuleEntity rule = rules.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Règle introuvable : " + id));
-        rule.update(request.name(), request.eventType(), request.thresholdCount(),
-                request.windowSeconds(), request.severity(), request.enabled());
-        return rules.save(rule);
+        return service.update(id, request.name(), request.eventType(),
+                request.thresholdCount(), request.windowSeconds(), request.severity(),
+                request.enabled());
     }
 
     record RuleRequest(
