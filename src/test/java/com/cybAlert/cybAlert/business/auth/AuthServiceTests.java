@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -78,6 +79,29 @@ class AuthServiceTests {
         verify(refreshTokens).save(any(RefreshTokenEntity.class));
         verify(audit).record(any(), org.mockito.Mockito.eq("LOGIN_SUCCESS"),
                 org.mockito.Mockito.eq("USER"), any());
+        verifyNoMoreInteractions(audit);
+        assertThat(org.mockito.Mockito.mockingDetails(audit).getInvocations())
+                .allSatisfy(invocation -> assertThat(java.util.Arrays.toString(
+                        invocation.getArguments()))
+                        .doesNotContain("correct-password", "signed-access-token",
+                                tokens.refreshToken()));
+    }
+
+    @Test
+    void failedLoginDoesNotWritePasswordToAudit() {
+        UserEntity user = new UserEntity("analyst", "analyst@cyberwatch.test",
+                new BCryptPasswordEncoder(4).encode("correct-password"));
+        when(users.findByEmail("analyst@cyberwatch.test")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> service.login("analyst@cyberwatch.test", "wrong-password"))
+                .isInstanceOf(AuthService.InvalidCredentialsException.class);
+
+        verify(audit).record(any(), org.mockito.Mockito.eq("LOGIN_FAILED"),
+                org.mockito.Mockito.eq("USER"), any());
+        assertThat(org.mockito.Mockito.mockingDetails(audit).getInvocations())
+                .allSatisfy(invocation -> assertThat(java.util.Arrays.toString(
+                        invocation.getArguments()))
+                        .doesNotContain("wrong-password", "correct-password"));
     }
 
     @Test
