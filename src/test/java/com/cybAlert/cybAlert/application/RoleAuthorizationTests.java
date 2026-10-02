@@ -7,8 +7,11 @@ import com.cybAlert.cybAlert.application.event.SecurityEventController;
 import com.cybAlert.cybAlert.application.incident.IncidentController;
 import com.cybAlert.cybAlert.application.source.SourceController;
 import com.cybAlert.cybAlert.business.event.SecurityEventService;
+import com.cybAlert.cybAlert.business.alert.AlertService;
+import com.cybAlert.cybAlert.business.detection.DetectionRuleService;
 import com.cybAlert.cybAlert.business.incident.IncidentService;
 import com.cybAlert.cybAlert.business.source.SourceService;
+import com.cybAlert.cybAlert.business.source.SourceEntity;
 import com.cybAlert.cybAlert.infrastructure.alert.SpringDataAlertRepository;
 import com.cybAlert.cybAlert.infrastructure.audit.SpringDataAuditLogRepository;
 import com.cybAlert.cybAlert.infrastructure.auth.SecurityConfiguration;
@@ -28,8 +31,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = {SourceController.class, SecurityEventController.class,
@@ -43,7 +48,9 @@ class RoleAuthorizationTests {
     @MockitoBean SecurityEventService events;
     @MockitoBean ElasticsearchSecurityEventRepository indexedEvents;
     @MockitoBean SpringDataDetectionRuleRepository rules;
+    @MockitoBean DetectionRuleService ruleService;
     @MockitoBean SpringDataAlertRepository alerts;
+    @MockitoBean AlertService alertService;
     @MockitoBean IncidentService incidents;
     @MockitoBean SpringDataAuditLogRepository audit;
 
@@ -97,5 +104,58 @@ class RoleAuthorizationTests {
                 .andExpect(status().isForbidden());
         mvc.perform(get("/api/audit"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void sourceModificationAndDeletionAreReservedToAdmin() throws Exception {
+        String id = UUID.randomUUID().toString();
+        mvc.perform(put("/api/sources/{id}", id).with(user("operator").roles("OPERATOR"))
+                .contentType("application/json").content("{}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(put("/api/sources/{id}", id).with(user("admin").roles("ADMIN"))
+                .contentType("application/json").content("{}"))
+                .andExpect(status().isUnprocessableEntity());
+        mvc.perform(delete("/api/sources/{id}", id).with(user("operator").roles("OPERATOR")))
+                .andExpect(status().isForbidden());
+        mvc.perform(delete("/api/sources/{id}", id).with(user("admin").roles("ADMIN")))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void operatorCanHeartbeatAndViewerCanOnlyReadSources() throws Exception {
+        String id = UUID.randomUUID().toString();
+        when(sources.heartbeat(UUID.fromString(id))).thenReturn(
+                org.mockito.Mockito.mock(SourceEntity.class));
+        when(sources.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(Page.empty());
+        mvc.perform(patch("/api/sources/{id}/heartbeat", id)
+                .with(user("operator").roles("OPERATOR")))
+                .andExpect(status().isOk());
+        mvc.perform(patch("/api/sources/{id}/heartbeat", id)
+                .with(user("viewer").roles("VIEWER")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/sources").with(user("viewer").roles("VIEWER")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void ruleUpdatesNeedAdminAndIncidentUpdatesNeedAnalyst() throws Exception {
+        String id = UUID.randomUUID().toString();
+        mvc.perform(put("/api/detection-rules/{id}", id)
+                .with(user("analyst").roles("SOC_ANALYST"))
+                .contentType("application/json").content("{}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(put("/api/detection-rules/{id}", id)
+                .with(user("admin").roles("ADMIN"))
+                .contentType("application/json").content("{}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(patch("/api/incidents/{id}/status", id)
+                .with(user("viewer").roles("VIEWER"))
+                .contentType("application/json").content("{}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(patch("/api/incidents/{id}/status", id)
+                .with(user("analyst").roles("SOC_ANALYST"))
+                .contentType("application/json").content("{}"))
+                .andExpect(status().isUnprocessableEntity());
     }
 }
