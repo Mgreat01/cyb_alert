@@ -1,5 +1,6 @@
 package com.cybAlert.cybAlert.business.event;
 
+import com.cybAlert.cybAlert.business.audit.AuditService;
 import com.cybAlert.cybAlert.business.source.SourceEntity;
 import com.cybAlert.cybAlert.business.source.SourceRepository;
 import com.cybAlert.cybAlert.infrastructure.event.EventOutboxRepository;
@@ -16,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SecurityEventServiceTests {
@@ -23,6 +25,7 @@ class SecurityEventServiceTests {
     private SourceRepository sources;
     private EventOutboxRepository outbox;
     private EventPayloadCodec codec;
+    private AuditService audit;
     private SecurityEventService service;
 
     @BeforeEach
@@ -30,7 +33,8 @@ class SecurityEventServiceTests {
         sources = mock(SourceRepository.class);
         outbox = mock(EventOutboxRepository.class);
         codec = mock(EventPayloadCodec.class);
-        service = new SecurityEventService(sources, outbox, codec);
+        audit = mock(AuditService.class);
+        service = new SecurityEventService(sources, outbox, codec, audit);
     }
 
     @Test
@@ -47,6 +51,7 @@ class SecurityEventServiceTests {
         assertThat(event.getProtocol()).isEqualTo("TCP");
         assertThat(event.getSeverity()).isEqualTo("HIGH");
         org.mockito.Mockito.verify(outbox).saveAndFlush(any(EventOutboxEntity.class));
+        verify(audit).recordCurrentActor("EVENT_INGESTED", "EVENT", "evt-42");
     }
 
     @Test

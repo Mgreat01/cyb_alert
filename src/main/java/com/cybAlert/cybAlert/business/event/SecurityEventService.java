@@ -1,5 +1,6 @@
 package com.cybAlert.cybAlert.business.event;
 
+import com.cybAlert.cybAlert.business.audit.AuditService;
 import com.cybAlert.cybAlert.business.source.SourceRepository;
 import com.cybAlert.cybAlert.infrastructure.event.EventOutboxRepository;
 import com.cybAlert.cybAlert.infrastructure.event.EventPayloadCodec;
@@ -17,12 +18,15 @@ public class SecurityEventService {
     private final SourceRepository sources;
     private final EventOutboxRepository outbox;
     private final EventPayloadCodec codec;
+    private final AuditService audit;
 
     public SecurityEventService(SourceRepository sources,
-                                EventOutboxRepository outbox, EventPayloadCodec codec) {
+                                EventOutboxRepository outbox, EventPayloadCodec codec,
+                                AuditService audit) {
         this.sources = sources;
         this.outbox = outbox;
         this.codec = codec;
+        this.audit = audit;
     }
 
     @Transactional
@@ -43,6 +47,7 @@ public class SecurityEventService {
                 uppercase(protocol), strip(username), uppercase(severity), message.strip(),
                 metadata == null ? Map.of() : Map.copyOf(metadata));
         outbox.saveAndFlush(new EventOutboxEntity(normalizedId, codec.encode(event)));
+        audit.recordCurrentActor("EVENT_INGESTED", "EVENT", normalizedId);
         return event;
     }
 
