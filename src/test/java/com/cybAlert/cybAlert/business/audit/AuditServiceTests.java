@@ -3,6 +3,9 @@ package com.cybAlert.cybAlert.business.audit;
 import com.cybAlert.cybAlert.infrastructure.audit.SpringDataAuditLogRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.util.UUID;
 
@@ -25,5 +28,23 @@ class AuditServiceTests {
         assertThat(saved.getValue().getAction()).isEqualTo("LOGIN_SUCCESS");
         assertThat(saved.getValue().getResourceId()).isEqualTo(userId.toString());
         assertThat(saved.getValue().getCreatedAt()).isNotNull();
+    }
+
+    @Test
+    void attributesSensitiveActionToAuthenticatedJwtSubject() {
+        SpringDataAuditLogRepository logs = mock(SpringDataAuditLogRepository.class);
+        UUID actorId = UUID.randomUUID();
+        Jwt jwt = Jwt.withTokenValue("test-token").header("alg", "HS256")
+                .subject(actorId.toString()).build();
+        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
+        try {
+            new AuditService(logs).recordCurrentActor("SOURCE_DELETED", "SOURCE", "source-1");
+            ArgumentCaptor<AuditLogEntity> saved = ArgumentCaptor.forClass(AuditLogEntity.class);
+            verify(logs).save(saved.capture());
+            assertThat(saved.getValue().getUserId()).isEqualTo(actorId);
+            assertThat(saved.getValue().getAction()).isEqualTo("SOURCE_DELETED");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 }
