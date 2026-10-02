@@ -188,4 +188,26 @@ class RoleAuthorizationTests {
                 .with(user("viewer").roles("VIEWER")))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void incidentAssignmentAndCommentsRequireAnalystRole() throws Exception {
+        String id = UUID.randomUUID().toString();
+        for (String path : new String[]{"/api/incidents/" + id + "/assignee",
+                "/api/incidents/" + id + "/status"}) {
+            mvc.perform(patch(path).with(user("viewer").roles("VIEWER"))
+                    .contentType("application/json").content("{}"))
+                    .andExpect(status().isForbidden());
+            mvc.perform(patch(path).with(user("analyst").roles("SOC_ANALYST"))
+                    .contentType("application/json").content("{}"))
+                    .andExpect(status().isUnprocessableEntity());
+        }
+        mvc.perform(post("/api/incidents/{id}/comments", id)
+                .with(user("viewer").roles("VIEWER"))
+                .contentType("application/json").content("{}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/api/incidents/{id}/comments", id)
+                .with(user("analyst").roles("SOC_ANALYST"))
+                .contentType("application/json").content("{}"))
+                .andExpect(status().isUnprocessableEntity());
+    }
 }
