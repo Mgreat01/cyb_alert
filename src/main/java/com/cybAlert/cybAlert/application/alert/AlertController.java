@@ -1,6 +1,7 @@
 package com.cybAlert.cybAlert.application.alert;
 
 import com.cybAlert.cybAlert.business.alert.AlertEntity;
+import com.cybAlert.cybAlert.business.alert.AlertService;
 import com.cybAlert.cybAlert.infrastructure.alert.SpringDataAlertRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -21,8 +22,12 @@ import java.util.UUID;
 public class AlertController {
 
     private final SpringDataAlertRepository alerts;
+    private final AlertService service;
 
-    public AlertController(SpringDataAlertRepository alerts) { this.alerts = alerts; }
+    public AlertController(SpringDataAlertRepository alerts, AlertService service) {
+        this.alerts = alerts;
+        this.service = service;
+    }
 
     @GetMapping
     public Page<AlertEntity> findAll(@RequestParam(required = false) AlertEntity.Status status,
@@ -45,9 +50,7 @@ public class AlertController {
     @PatchMapping("/{id}")
     public AlertEntity changeStatus(@PathVariable UUID id,
                                     @Valid @RequestBody StatusRequest request) {
-        AlertEntity alert = findById(id);
-        alert.changeStatus(request.status());
-        return alerts.save(alert);
+        return service.changeStatus(id, request.status());
     }
 
     record StatusRequest(@NotNull AlertEntity.Status status) {
