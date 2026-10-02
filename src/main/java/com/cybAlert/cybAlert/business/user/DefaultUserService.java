@@ -1,5 +1,6 @@
 package com.cybAlert.cybAlert.business.user;
 
+import com.cybAlert.cybAlert.business.audit.AuditService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,10 +17,13 @@ public class DefaultUserService implements UserService {
 
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditService audit;
 
-    public DefaultUserService(UserRepository repository, PasswordEncoder passwordEncoder) {
+    public DefaultUserService(UserRepository repository, PasswordEncoder passwordEncoder,
+                              AuditService audit) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
+        this.audit = audit;
     }
 
     @Override
@@ -37,8 +41,11 @@ public class DefaultUserService implements UserService {
         }
 
         String passwordHash = passwordEncoder.encode(rawPassword);
-        return repository.save(new UserEntity(normalizedUsername, normalizedEmail, passwordHash,
-                firstName, lastName, UserEntity.Role.VIEWER, UserEntity.Status.ACTIVE));
+        UserEntity created = repository.save(new UserEntity(normalizedUsername, normalizedEmail,
+                passwordHash, firstName, lastName, UserEntity.Role.VIEWER,
+                UserEntity.Status.ACTIVE));
+        audit.recordCurrentActor("USER_CREATED", "USER", String.valueOf(created.getId()));
+        return created;
     }
 
     @Override
@@ -68,7 +75,9 @@ public class DefaultUserService implements UserService {
         UserEntity user = repository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
         user.updateProfile(firstName, lastName, role, status);
-        return repository.save(user);
+        UserEntity updated = repository.save(user);
+        audit.recordCurrentActor("USER_UPDATED", "USER", id.toString());
+        return updated;
     }
 
     @Override
@@ -77,6 +86,7 @@ public class DefaultUserService implements UserService {
         UserEntity user = repository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
         repository.delete(user);
+        audit.recordCurrentActor("USER_DELETED", "USER", id.toString());
     }
 
     public static class UserAlreadyExistsException extends IllegalArgumentException {
