@@ -15,6 +15,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @WebMvcTest(UserController.class)
 @Import(SecurityConfiguration.class)
@@ -39,6 +40,7 @@ class UserAuthorizationTests {
         when(service.findAll(any())).thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/users"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page.totalElements").value(0));
     }
 }
