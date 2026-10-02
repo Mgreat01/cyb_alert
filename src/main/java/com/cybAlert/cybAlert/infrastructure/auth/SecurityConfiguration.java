@@ -67,7 +67,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.PATCH, "/api/incidents/**")
                             .hasAnyRole("ADMIN", "SOC_ANALYST")
                         .requestMatchers("/api/audit/**").hasRole("ADMIN")
-                        .anyRequest().authenticated())
+                        .anyRequest().hasAnyRole("ADMIN", "SOC_ANALYST", "OPERATOR", "VIEWER"))
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .build();

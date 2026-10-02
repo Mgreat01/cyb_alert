@@ -3,13 +3,18 @@ package com.cybAlert.cybAlert.application;
 import com.cybAlert.cybAlert.application.alert.AlertController;
 import com.cybAlert.cybAlert.application.audit.AuditController;
 import com.cybAlert.cybAlert.application.detection.DetectionRuleController;
+import com.cybAlert.cybAlert.application.dashboard.DashboardController;
 import com.cybAlert.cybAlert.application.event.SecurityEventController;
 import com.cybAlert.cybAlert.application.incident.IncidentController;
+import com.cybAlert.cybAlert.application.realtime.AlertStreamController;
+import com.cybAlert.cybAlert.application.realtime.AlertUpdates;
+import com.cybAlert.cybAlert.application.risk.RiskController;
 import com.cybAlert.cybAlert.application.source.SourceController;
 import com.cybAlert.cybAlert.business.event.SecurityEventService;
 import com.cybAlert.cybAlert.business.alert.AlertService;
 import com.cybAlert.cybAlert.business.detection.DetectionRuleService;
 import com.cybAlert.cybAlert.business.incident.IncidentService;
+import com.cybAlert.cybAlert.business.risk.RiskService;
 import com.cybAlert.cybAlert.business.source.SourceService;
 import com.cybAlert.cybAlert.business.source.SourceEntity;
 import com.cybAlert.cybAlert.infrastructure.alert.SpringDataAlertRepository;
@@ -17,6 +22,8 @@ import com.cybAlert.cybAlert.infrastructure.audit.SpringDataAuditLogRepository;
 import com.cybAlert.cybAlert.infrastructure.auth.SecurityConfiguration;
 import com.cybAlert.cybAlert.infrastructure.detection.SpringDataDetectionRuleRepository;
 import com.cybAlert.cybAlert.infrastructure.event.ElasticsearchSecurityEventRepository;
+import com.cybAlert.cybAlert.infrastructure.incident.SpringDataIncidentRepository;
+import com.cybAlert.cybAlert.infrastructure.source.SpringDataSourceRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -39,7 +46,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = {SourceController.class, SecurityEventController.class,
         DetectionRuleController.class, AlertController.class, IncidentController.class,
-        AuditController.class})
+        AuditController.class, DashboardController.class, RiskController.class,
+        AlertStreamController.class})
 @Import(SecurityConfiguration.class)
 class RoleAuthorizationTests {
 
@@ -53,6 +61,10 @@ class RoleAuthorizationTests {
     @MockitoBean AlertService alertService;
     @MockitoBean IncidentService incidents;
     @MockitoBean SpringDataAuditLogRepository audit;
+    @MockitoBean SpringDataIncidentRepository incidentRepository;
+    @MockitoBean SpringDataSourceRepository sourceRepository;
+    @MockitoBean RiskService risks;
+    @MockitoBean AlertUpdates updates;
 
     @Test
     void operatorCanSubmitButViewerCannot() throws Exception {
@@ -157,5 +169,23 @@ class RoleAuthorizationTests {
                 .with(user("analyst").roles("SOC_ANALYST"))
                 .contentType("application/json").content("{}"))
                 .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void readOnlySocViewsRequireARecognizedRole() throws Exception {
+        String id = UUID.randomUUID().toString();
+        for (String path : new String[]{"/api/dashboard/summary",
+                "/api/dashboard/priority-alerts", "/api/dashboard/priority-incidents",
+                "/api/risk/sources/" + id, "/api/stream/alerts"}) {
+            mvc.perform(get(path)).andExpect(status().isUnauthorized());
+            mvc.perform(get(path).with(user("outsider").roles("UNKNOWN")))
+                    .andExpect(status().isForbidden());
+        }
+        when(risks.highestRisk(5)).thenReturn(java.util.List.of());
+        mvc.perform(get("/api/dashboard/summary").with(user("viewer").roles("VIEWER")))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/risk/sources/{id}", id)
+                .with(user("viewer").roles("VIEWER")))
+                .andExpect(status().isOk());
     }
 }
